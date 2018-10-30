@@ -26,9 +26,14 @@ MESH TO LOAD
 ----------------------------------------------------------------------------*/
 // this mesh is a dae file format but you should be able to use any other format too, obj is typically what is used
 // put the mesh in your project directory, or provide a filepath for it here
-#define MESH_NAME "rbrmclx.dae"
+#define MESH_NAME_ONE "square.dae"
+#define MESH_NAME_TWO "sphere.dae"
+#define MESH_NAME_THREE "cylinder.dae"
+#define MESH_NAME_FOUR "cone1.dae"
+#define MESH_NAME_FIVE "torus.dae"
 /*----------------------------------------------------------------------------
 ----------------------------------------------------------------------------*/
+GLuint VAO[5];
 
 #pragma region SimpleTypes
 typedef struct
@@ -43,15 +48,29 @@ typedef struct
 using namespace std;
 GLuint shaderProgramID;
 
-ModelData mesh_data;
+ModelData mesh_data0;
+ModelData mesh_data1;
+ModelData mesh_data2;
+ModelData mesh_data3;
+ModelData mesh_data4;
+
 unsigned int mesh_vao = 0;
 int width = 800;
 int height = 600;
 
 GLuint loc1, loc2, loc3;
+GLfloat rotate_x = 0.0f;
 GLfloat rotate_y = 0.0f;
-GLfloat rotate_child = 0.0f;
+GLfloat rotate_z = 0.0f;
 
+GLfloat rootTransx= 0.0f;
+GLfloat rootTransy = 0.0f;
+GLfloat rootTransz = 0.0f;
+GLfloat rootRotx = 0.0f;
+GLfloat rootRoty = 0.0f;
+GLfloat rootRotz = 0.0f;
+GLfloat rotatefinger = 0.0f;
+GLfloat rotatewrist = 0.0f;
 
 #pragma region MESH LOADING
 /*----------------------------------------------------------------------------
@@ -218,7 +237,7 @@ GLuint CompileShaders()
 
 // VBO Functions - click on + to expand
 #pragma region VBO_FUNCTIONS
-void generateObjectBufferMesh() {
+void generateObjectBufferMesh(ModelData mesh_data) {
 	/*----------------------------------------------------------------------------
 	LOAD MESH HERE AND COPY INTO BUFFERS
 	----------------------------------------------------------------------------*/
@@ -226,7 +245,7 @@ void generateObjectBufferMesh() {
 	//Note: you may get an error "vector subscript out of range" if you are using this code for a mesh that doesnt have positions and normals
 	//Might be an idea to do a check for that before generating and binding the buffer.
 
-	mesh_data = load_mesh(MESH_NAME);
+	
 	unsigned int vp_vbo = 0;
 	loc1 = glGetAttribLocation(shaderProgramID, "vertex_position");
 	loc2 = glGetAttribLocation(shaderProgramID, "vertex_normal");
@@ -246,8 +265,6 @@ void generateObjectBufferMesh() {
 	//	glBindBuffer (GL_ARRAY_BUFFER, vt_vbo);
 	//	glBufferData (GL_ARRAY_BUFFER, monkey_head_data.mTextureCoords * sizeof (vec2), &monkey_head_data.mTextureCoords[0], GL_STATIC_DRAW);
 	
-	unsigned int vao = 0;
-	glBindVertexArray(vao);
 
 	glEnableVertexAttribArray(loc1);
 	glBindBuffer(GL_ARRAY_BUFFER, vp_vbo);
@@ -279,44 +296,109 @@ void display() {
 	int view_mat_location = glGetUniformLocation(shaderProgramID, "view");
 	int proj_mat_location = glGetUniformLocation(shaderProgramID, "proj");
 
-
+	glBindVertexArray(VAO[0]);
 	// Root of the Hierarchy
 	mat4 view = identity_mat4();
 	mat4 persp_proj = perspective(45.0f, (float)width / (float)height, 0.1f, 1000.0f);
-	mat4 model = identity_mat4();
-	model = rotate_z_deg(model, rotate_y);
-	view = translate(view, vec3(0.0, 0.0, -50.0f));
+	
+	
+	mat4 root = identity_mat4();
+	view = translate(view, vec3(0.0+rootTransx, 0.0+rootTransy, -50.0f+rootTransz));
+	root = rotate_x_deg(root, rootRotx);
+	root = rotate_y_deg(root, rootRoty);
+	root = rotate_z_deg(root, rootRotz);
 
 	// update uniforms & draw
 	glUniformMatrix4fv(proj_mat_location, 1, GL_FALSE, persp_proj.m);
 	glUniformMatrix4fv(view_mat_location, 1, GL_FALSE, view.m);
-	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, model.m);
-	glDrawArrays(GL_TRIANGLES, 0, mesh_data.mPointCount);
+	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, root.m);
+	glDrawArrays(GL_TRIANGLES, 0, mesh_data0.mPointCount);
 	
-	// Set up the child matrix
-	mat4 modelChild = identity_mat4();
-	modelChild = rotate_y_deg(modelChild, 0);
-	modelChild = translate(modelChild, vec3(0.0f, -10.0f, 0.0f));
-
-	// Apply the root matrix to the child matrix
-	modelChild = model * modelChild;
 
 	// Set up the child matrix
-	mat4 modelChild1 = identity_mat4();
-	modelChild1 = rotate_z_deg(modelChild1, rotate_child);
-	modelChild1 = translate(modelChild1, vec3(-10.0f, -10.0f, 0.0f));
+	// Draw first arm
+	mat4 armChild1 = identity_mat4();
+	armChild1 = translate(armChild1, vec3(0.0f, 3.0f, 0.0f));
+	armChild1 = root * armChild1;
+	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, armChild1.m);
+	glDrawArrays(GL_TRIANGLES, 0, mesh_data0.mPointCount);
 
-	// Apply the root matrix to the child matrix
-	modelChild1 = model * modelChild1;
+	mat4 armChild2 = identity_mat4();
+	armChild2 = translate(armChild2, vec3(0.0f, 3.0f, 0.0f));
+	armChild2 = armChild1 * armChild2;
+	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, armChild2.m);
+	glDrawArrays(GL_TRIANGLES, 0, mesh_data0.mPointCount);
 
-	// Update the appropriate uniform and draw the mesh again
-	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, modelChild1.m);
-	glDrawArrays(GL_TRIANGLES, 0, mesh_data.mPointCount);
+	mat4 armChild3 = identity_mat4();
+	armChild3 = translate(armChild3, vec3(0.0f, 3.0f, 0.0f));
+	armChild3 = rotate_z_deg(armChild3, rotate_z);
+	armChild3 = armChild2 * armChild3;
+	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, armChild3.m);
+	glDrawArrays(GL_TRIANGLES, 0, mesh_data0.mPointCount);
 
-	// Update the appropriate uniform and draw the mesh again
-	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, modelChild.m);
-	glDrawArrays(GL_TRIANGLES, 0, mesh_data.mPointCount);
-	
+	mat4 armChild4 = identity_mat4();
+	armChild4 = translate(armChild4, vec3(0.0f, 3.0f, 0.0f));
+	armChild4 = armChild3 * armChild4;
+	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, armChild4.m);
+	glDrawArrays(GL_TRIANGLES, 0, mesh_data0.mPointCount);
+
+	glBindVertexArray(VAO[4]);
+	mat4 torus = identity_mat4();
+	torus = translate(torus, vec3(0.0f, 2.0f, 0.0f));
+	torus = armChild4 * torus;
+	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, torus.m);
+	glDrawArrays(GL_TRIANGLES, 0, mesh_data4.mPointCount);
+
+	glBindVertexArray(VAO[1]);
+	mat4 wrist = identity_mat4();
+	wrist = translate(wrist, vec3(0.0f, 0.0f, 0.0f));
+	//wrist = rotate_y_deg(wrist, rotate_y);
+	wrist = rotate_x_deg(wrist, rotatewrist);
+	wrist = translate(wrist, vec3(0.0f, 1.0f, 0.0f));
+	wrist = torus * wrist;
+	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, wrist.m);
+	glDrawArrays(GL_TRIANGLES, 0, mesh_data1.mPointCount);
+
+	glBindVertexArray(VAO[2]);
+	mat4 finger1 = identity_mat4();
+	finger1 = translate(finger1, vec3(0.0f, 1.0f, 0.0f));
+	finger1 = rotate_x_deg(finger1, rotatefinger);
+
+	finger1 = wrist * finger1;
+	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, finger1.m);
+	glDrawArrays(GL_TRIANGLES, 0, mesh_data2.mPointCount);
+
+	mat4 finger2 = identity_mat4();
+	finger2 = translate(finger2, vec3(-0.5f, 1.0f, 0.0f));
+	finger2 = wrist * finger2;
+	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, finger2.m);
+	glDrawArrays(GL_TRIANGLES, 0, mesh_data2.mPointCount);
+
+	mat4 finger3 = identity_mat4();
+	finger3 = translate(finger3, vec3(0.5f, 1.0f, 0.0f));
+	finger3 = wrist * finger3;
+	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, finger3.m);
+	glDrawArrays(GL_TRIANGLES, 0, mesh_data2.mPointCount);
+
+	glBindVertexArray(VAO[3]);
+	mat4 fingertip1 = identity_mat4();
+	fingertip1 = translate(fingertip1, vec3(0.0f, 2.0f, 0.0f));
+	fingertip1 = finger1 * fingertip1;
+	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, fingertip1.m);
+	glDrawArrays(GL_TRIANGLES, 0, mesh_data3.mPointCount);
+
+	mat4 fingertip2 = identity_mat4();
+	fingertip2 = translate(fingertip2, vec3(0.0f, 2.0f, 0.0f));
+	fingertip2 = finger2 * fingertip2;
+	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, fingertip2.m);
+	glDrawArrays(GL_TRIANGLES, 0, mesh_data3.mPointCount);
+
+	mat4 fingertip3 = identity_mat4();
+	fingertip3 = translate(fingertip3, vec3(0.0f, 2.0f, 0.0f));
+	fingertip3 = finger3 * fingertip3;
+	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, fingertip3.m);
+	glDrawArrays(GL_TRIANGLES, 0, mesh_data3.mPointCount);
+
 	glutSwapBuffers();
 }
 
@@ -330,11 +412,15 @@ void updateScene() {
 	float delta = (curr_time - last_time) * 0.001f;
 	last_time = curr_time;
 
-	// Rotate the model slowly around the y axis at 20 degrees per second
-	rotate_y += 20.0f * delta;
-	rotate_y = fmodf(rotate_y, 360.0f);
+	// Rotate the model 
+	rotate_z += 20.0f * delta;
+	rotate_z = fmodf(rotate_z, 90.0f);
 
-	rotate_child += 10.0f * delta;
+	rotate_y += 20.0f * delta;
+	rotate_y = fmodf(rotate_y, 30.0f);
+
+	rotate_x += 70.0f * delta;
+	rotate_x = fmodf(rotate_x, 60.0f);
 
 	// Draw the next frame
 	glutPostRedisplay();
@@ -343,17 +429,91 @@ void updateScene() {
 
 void init()
 {
+
+
+
 	// Set up the shaders
 	GLuint shaderProgramID = CompileShaders();
 	// load mesh into a vertex buffer array
-	generateObjectBufferMesh();
+	glGenVertexArrays(5, VAO);
+
+	glBindVertexArray(VAO[0]);
+	mesh_data0 = load_mesh(MESH_NAME_ONE);
+	generateObjectBufferMesh(mesh_data0);
+
+	glBindVertexArray(VAO[1]);
+	mesh_data1 = load_mesh(MESH_NAME_TWO);
+	generateObjectBufferMesh(mesh_data1);
+
+	glBindVertexArray(VAO[2]);
+	mesh_data2 = load_mesh(MESH_NAME_THREE);
+	generateObjectBufferMesh(mesh_data2);
+
+	glBindVertexArray(VAO[3]);
+	mesh_data3 = load_mesh(MESH_NAME_FOUR);
+	generateObjectBufferMesh(mesh_data3);
+
+	glBindVertexArray(VAO[4]);
+	mesh_data4 = load_mesh(MESH_NAME_FIVE);
+	generateObjectBufferMesh(mesh_data4);
+
 
 }
 
 // Placeholder code for the keypress
 void keypress(unsigned char key, int x, int y) {
-	if (key == 'x') {
+	if (key == 'd') {
 		//Translate the base, etc.
+		rootTransx += 1;
+	}
+	if (key == 'a') {
+		//Translate the base, etc.
+		rootTransx -= 1;
+	}
+	if (key == 'w') {
+		//Translate the base, etc.
+		rootTransy += 1;
+	}
+	if (key == 's') {
+		//Translate the base, etc.
+		rootTransy -= 1;
+	}
+	if (key == 'e') {
+		//Translate the base, etc.
+		rootTransz += 1;
+	}
+	if (key == 'q') {
+		//Translate the base, etc.
+		rootTransz -= 1;
+	}
+
+	if (key == ']') {
+		//rotate the base, etc.
+		rootRoty += 2;
+	}
+	if (key == '[') {
+		//rotate the base, etc.
+		rootRoty -= 2;
+	}
+
+	if (key == 'p') {
+		//rotate the base, etc.
+		rotatefinger += 2;
+	}
+
+	if (key == 'o') {
+		//rotate the base, etc.
+		rotatefinger -= 2;
+	}
+
+	if (key == 'b') {
+		//rotate the base, etc.
+		rotatewrist += 5;
+	}
+
+	if (key == 'v') {
+		//rotate the base, etc.
+		rotatewrist -= 5;
 	}
 }
 
@@ -363,7 +523,7 @@ int main(int argc, char** argv) {
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
 	glutInitWindowSize(width, height);
-	glutCreateWindow("Hello Triangle");
+	glutCreateWindow("Hello HAND");
 
 	// Tell glut where the display function is
 	glutDisplayFunc(display);
